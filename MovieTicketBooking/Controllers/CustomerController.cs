@@ -32,6 +32,7 @@ namespace MovieTicketBooking.Controllers
         /// Create new user
         /// </summary>
         /// <param name="model">User model data</param>
+        /// <param name="isAdmin"></param>
         /// <returns>Action result</returns>
         [AllowAnonymous]
         [HttpPost]
