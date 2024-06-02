@@ -5,26 +5,23 @@ using MovieTicketBooking.Controllers;
 using MovieTicketBooking.Data.Models.Dto;
 using MovieTicketBooking.Data.Models.Entities;
 using MovieTicketBooking.Service.Interface;
+using System.Threading.Tasks;
 using Xunit;
 
-namespace MovieTicketBooking.Tests
+namespace MovieTicketBooking.Tests.Controllers
 {
     /// <summary>
-    /// Test class for <see cref="CustomerController"/>.
+    /// Test class for CustomerController.
     /// </summary>
     public class CustomerControllerTests
     {
-        private readonly Mock<ICustomerService> _serviceMock;
+        private readonly Mock<ICustomerService> _mockService;
         private readonly CustomerController _controller;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CustomerControllerTests"/> class.
-        /// Sets up the mock service and the controller.
-        /// </summary>
         public CustomerControllerTests()
         {
-            _serviceMock = new Mock<ICustomerService>();
-            _controller = new CustomerController(_serviceMock.Object);
+            _mockService = new Mock<ICustomerService>();
+            _controller = new CustomerController(_mockService.Object);
         }
 
         /// <summary>
@@ -34,12 +31,12 @@ namespace MovieTicketBooking.Tests
         public async Task CreateUser_ValidData_ReturnsOk()
         {
             // Arrange
-            var model = new UserDto();
-            var response = new CreateResponse { IsSuccess = true, Message = "User created" };
-            _serviceMock.Setup(s => s.CreateUser(model, false)).ReturnsAsync(response);
+            var userDto = new UserDto { /* Initialize with valid data */ };
+            var response = new CreateResponse { IsSuccess = true };
+            _mockService.Setup(service => service.CreateUser(userDto, It.IsAny<bool>())).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.CreateUser(model, false) as OkObjectResult;
+            var result = await _controller.CreateUser(userDto, false) as OkObjectResult;
 
             // Assert
             Assert.NotNull(result);
@@ -54,14 +51,16 @@ namespace MovieTicketBooking.Tests
         public async Task CreateUser_InvalidData_ReturnsBadRequest()
         {
             // Arrange
-            _controller.ModelState.AddModelError("Username", "Required");
+            _controller.ModelState.AddModelError("Email", "Required");
+            var userDto = new UserDto { /* Initialize with invalid data */ };
 
             // Act
-            var result = await _controller.CreateUser(new UserDto(), false) as BadRequestObjectResult;
+            var result = await _controller.CreateUser(userDto, false) as BadRequestObjectResult;
 
             // Assert
             Assert.NotNull(result);
             Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            Assert.Equal("Provide valid data", result.Value);
         }
 
         /// <summary>
@@ -71,12 +70,12 @@ namespace MovieTicketBooking.Tests
         public async Task UpdatePassword_ValidData_ReturnsOk()
         {
             // Arrange
-            var userPassword = new UserPasswordUpdate { Username = "testuser", OldPassword = "oldpass", NewPassword = "newpass" };
-            var response = new CreateResponse { IsSuccess = true, Message = "Password updated" };
-            _serviceMock.Setup(s => s.PasswordUpdate(userPassword, userPassword.Username)).ReturnsAsync(response);
+            var userPasswordUpdate = new UserPasswordUpdate { Username = "testuser" /* Initialize with valid data */ };
+            var response = new CreateResponse { IsSuccess = true };
+            _mockService.Setup(service => service.PasswordUpdate(userPasswordUpdate, It.IsAny<string>())).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.UpdatePassword(userPassword) as OkObjectResult;
+            var result = await _controller.UpdatePassword(userPasswordUpdate) as OkObjectResult;
 
             // Assert
             Assert.NotNull(result);
@@ -91,14 +90,16 @@ namespace MovieTicketBooking.Tests
         public async Task UpdatePassword_InvalidData_ReturnsBadRequest()
         {
             // Arrange
-            _controller.ModelState.AddModelError("Username", "Required");
+            _controller.ModelState.AddModelError("Password", "Required");
+            var userPasswordUpdate = new UserPasswordUpdate { Username = "testuser" /* Initialize with invalid data */ };
 
             // Act
-            var result = await _controller.UpdatePassword(new UserPasswordUpdate()) as BadRequestObjectResult;
+            var result = await _controller.UpdatePassword(userPasswordUpdate) as BadRequestObjectResult;
 
             // Assert
             Assert.NotNull(result);
             Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            Assert.Equal("No user found", result.Value);
         }
     }
 }

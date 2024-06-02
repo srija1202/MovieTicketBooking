@@ -1,12 +1,8 @@
 ﻿using AutoMapper;
 using MovieTicketBooking.Data.Models.Dto;
 using MovieTicketBooking.Data.Models.Entities;
-using MovieTicketBooking.Models.Entities;
 using MovieTicketBooking.Repository.Interface;
 using MovieTicketBooking.Service.Interface;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace MovieTicketBooking.Business.Service
 {

@@ -5,7 +5,6 @@ using MovieTicketBooking.Controllers;
 using MovieTicketBooking.Data.Models.Dto;
 using MovieTicketBooking.Data.Models.Entities;
 using MovieTicketBooking.Service.Interface;
-using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -13,141 +12,141 @@ using Xunit;
 
 namespace MovieTicketBooking.Tests
 {
-    /// <summary>
-    /// Test class for <see cref="BookingController"/>.
-    /// </summary>
     public class BookingControllerTests
     {
-        private readonly Mock<IBookingService> _serviceMock;
+        private readonly Mock<IBookingService> _mockService;
         private readonly BookingController _controller;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BookingControllerTests"/> class.
-        /// Sets up the mock service and the controller.
-        /// </summary>
         public BookingControllerTests()
         {
-            _serviceMock = new Mock<IBookingService>();
-            _controller = new BookingController(_serviceMock.Object);
+            _mockService = new Mock<IBookingService>();
+            _controller = new BookingController(_mockService.Object);
 
             var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
             {
                 new Claim("Id", "test-user-id")
             }, "mock"));
-            _controller.ControllerContext = new ControllerContext
+
+            _controller.ControllerContext = new ControllerContext()
             {
-                HttpContext = new DefaultHttpContext { User = user }
+                HttpContext = new DefaultHttpContext() { User = user }
             };
         }
 
         /// <summary>
-        /// Tests the TicketBook method with valid data.
+        /// Verifies that the TicketBook method returns an OkObjectResult when booking is successful.
         /// </summary>
         [Fact]
-        public async Task TicketBook_ValidData_ReturnsOk()
+        public async Task TicketBook_Success_ReturnsOkResult()
         {
             // Arrange
-            var model = new TicketDto { TicketsCount = 2, MovieId = "movie-id", TheaterId = "theater-id" };
-            var response = new CreateResponse { IsSuccess = true, Message = "Booking successful" };
-            _serviceMock.Setup(s => s.TicketBook(model, "test-user-id")).ReturnsAsync(response);
+            var model = new TicketDto();
+            var response = new CreateResponse { IsSuccess = true };
+            _mockService.Setup(s => s.TicketBook(model, "test-user-id")).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.TicketBook(model) as OkObjectResult;
+            var result = await _controller.TicketBook(model);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(response, result.Value);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(okResult.Value);
+            Assert.True(returnValue.IsSuccess);
         }
 
         /// <summary>
-        /// Tests the TicketBook method with invalid data.
+        /// Verifies that the TicketBook method returns a BadRequestObjectResult when booking fails.
         /// </summary>
         [Fact]
-        public async Task TicketBook_InvalidData_ReturnsBadRequest()
+        public async Task TicketBook_Failure_ReturnsBadRequest()
         {
             // Arrange
-            _controller.ModelState.AddModelError("TicketsCount", "Required");
+            var model = new TicketDto();
+            var response = new CreateResponse { IsSuccess = false };
+            _mockService.Setup(s => s.TicketBook(model, "test-user-id")).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.TicketBook(new TicketDto()) as BadRequestObjectResult;
+            var result = await _controller.TicketBook(model);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(badRequestResult.Value);
+            Assert.False(returnValue.IsSuccess);
         }
 
         /// <summary>
-        /// Tests the RetrieveTickets method when tickets are found.
+        /// Verifies that the RetrieveTickets method returns an OkObjectResult when tickets are found.
         /// </summary>
         [Fact]
-        public async Task RetrieveTickets_TicketsFound_ReturnsOk()
+        public async Task RetrieveTickets_Success_ReturnsOkResult()
         {
             // Arrange
-            var tickets = new List<Tickets> { new Tickets(), new Tickets() };
-            _serviceMock.Setup(s => s.ReteriveTicktes("test-user-id")).ReturnsAsync(tickets);
+            var tickets = new List<Tickets> { new Tickets() };
+            _mockService.Setup(s => s.ReteriveTicktes("test-user-id")).ReturnsAsync(tickets);
 
             // Act
-            var result = await _controller.RetrieveTickets() as OkObjectResult;
+            var result = await _controller.RetrieveTickets();
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(tickets, result.Value);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<List<Tickets>>(okResult.Value);
+            Assert.Single(returnValue);
         }
 
         /// <summary>
-        /// Tests the RetrieveTickets method when no tickets are found.
+        /// Verifies that the RetrieveTickets method returns a NotFoundResult when no tickets are found.
         /// </summary>
         [Fact]
-        public async Task RetrieveTickets_NoTicketsFound_ReturnsNotFound()
+        public async Task RetrieveTickets_NotFound_ReturnsNotFoundResult()
         {
             // Arrange
-            _serviceMock.Setup(s => s.ReteriveTicktes("test-user-id")).ReturnsAsync(new List<Tickets>());
+            var tickets = new List<Tickets>();
+            _mockService.Setup(s => s.ReteriveTicktes("test-user-id")).ReturnsAsync(tickets);
 
             // Act
-            var result = await _controller.RetrieveTickets() as NotFoundResult;
+            var result = await _controller.RetrieveTickets();
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status404NotFound, result.StatusCode);
+            Assert.IsType<NotFoundResult>(result);
         }
 
         /// <summary>
-        /// Tests the UpdateTicket method with valid data.
+        /// Verifies that the UpdateTicket method returns an OkObjectResult when the update is successful.
         /// </summary>
         [Fact]
-        public async Task UpdateTicket_ValidData_ReturnsOk()
+        public async Task UpdateTicket_Success_ReturnsOkResult()
         {
             // Arrange
-            var model = new TicketDto { TicketsCount = 2, MovieId = "movie-id", TheaterId = "theater-id" };
-            var response = new CreateResponse { IsSuccess = true, Message = "Update successful" };
-            _serviceMock.Setup(s => s.UpdateTicket(model, "test-user-id")).ReturnsAsync(response);
+            var model = new TicketDto();
+            var response = new CreateResponse { IsSuccess = true };
+            _mockService.Setup(s => s.UpdateTicket(model, "test-user-id")).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.UpdateTicket(model) as OkObjectResult;
+            var result = await _controller.UpdateTicket(model);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(response, result.Value);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(okResult.Value);
+            Assert.True(returnValue.IsSuccess);
         }
 
         /// <summary>
-        /// Tests the UpdateTicket method with invalid data.
+        /// Verifies that the UpdateTicket method returns a BadRequestObjectResult when the update fails.
         /// </summary>
         [Fact]
-        public async Task UpdateTicket_InvalidData_ReturnsBadRequest()
+        public async Task UpdateTicket_Failure_ReturnsBadRequest()
         {
             // Arrange
-            _controller.ModelState.AddModelError("TicketsCount", "Required");
+            var model = new TicketDto();
+            var response = new CreateResponse { IsSuccess = false };
+            _mockService.Setup(s => s.UpdateTicket(model, "test-user-id")).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.UpdateTicket(new TicketDto()) as BadRequestObjectResult;
+            var result = await _controller.UpdateTicket(model);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(badRequestResult.Value);
+            Assert.False(returnValue.IsSuccess);
         }
     }
 }

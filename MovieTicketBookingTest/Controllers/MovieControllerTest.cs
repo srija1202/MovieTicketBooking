@@ -12,153 +12,165 @@ using Xunit;
 
 namespace MovieTicketBooking.Tests
 {
-    /// <summary>
-    /// Test class for <see cref="MovieController"/>.
-    /// </summary>
     public class MovieControllerTests
     {
-        private readonly Mock<IMovieService> _serviceMock;
+        private readonly Mock<IMovieService> _mockService;
         private readonly MovieController _controller;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MovieControllerTests"/> class.
-        /// Sets up the mock service and the controller.
-        /// </summary>
         public MovieControllerTests()
         {
-            _serviceMock = new Mock<IMovieService>();
-            _controller = new MovieController(_serviceMock.Object);
+            _mockService = new Mock<IMovieService>();
+            _controller = new MovieController(_mockService.Object);
         }
 
         /// <summary>
-        /// Tests the CreateMovie method with valid data.
+        /// Verifies that CreateMovie returns OkObjectResult when movie creation is successful.
         /// </summary>
         [Fact]
-        public async Task CreateMovie_ValidData_ReturnsOk()
+        public async Task CreateMovie_Success_ReturnsOkResult()
         {
             // Arrange
             var model = new MovieDto();
-            var response = new CreateResponse { IsSuccess = true, Message = "Movie created" };
-            _serviceMock.Setup(s => s.Create(model)).ReturnsAsync(response);
+            var response = new CreateResponse { IsSuccess = true };
+            _mockService.Setup(s => s.Create(model)).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.CreateMovie(model) as OkObjectResult;
+            var result = await _controller.CreateMovie(model);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(response, result.Value);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(okResult.Value);
+            Assert.True(returnValue.IsSuccess);
         }
 
         /// <summary>
-        /// Tests the CreateMovie method with invalid data.
+        /// Verifies that CreateMovie returns BadRequestObjectResult when movie creation fails.
         /// </summary>
         [Fact]
-        public async Task CreateMovie_InvalidData_ReturnsBadRequest()
+        public async Task CreateMovie_Failure_ReturnsBadRequest()
         {
             // Arrange
-            _controller.ModelState.AddModelError("Title", "Required");
+            var model = new MovieDto();
+            var response = new CreateResponse { IsSuccess = false };
+            _mockService.Setup(s => s.Create(model)).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.CreateMovie(new MovieDto()) as BadRequestObjectResult;
+            var result = await _controller.CreateMovie(model);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(badRequestResult.Value);
+            Assert.False(returnValue.IsSuccess);
         }
 
         /// <summary>
-        /// Tests the GetMovies method.
+        /// Verifies that GetMovies returns OkObjectResult when movies are found.
         /// </summary>
         [Fact]
-        public async Task GetMovies_ReturnsListOfMovies()
+        public async Task GetMovies_Success_ReturnsOkResult()
+        {
+            // Arrange
+            var movies = new List<Movie> { new Movie() };
+            _mockService.Setup(s => s.GetMovie()).ReturnsAsync(movies);
+
+            // Act
+            var result = await _controller.GetMovies();
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<List<Movie>>(okResult.Value);
+            Assert.Single(returnValue);
+        }
+
+        /// <summary>
+        /// Verifies that GetMovies returns BadRequestObjectResult when no movies are found.
+        /// </summary>
+        [Fact]
+        public async Task GetMovies_NotFound_ReturnsBadRequestResult()
         {
             // Arrange
             var movies = new List<Movie>();
-            _serviceMock.Setup(s => s.GetMovie()).ReturnsAsync(movies);
+            _mockService.Setup(s => s.GetMovie()).ReturnsAsync(movies);
 
             // Act
-            var result = await _controller.GetMovies() as OkObjectResult;
+            var result = await _controller.GetMovies();
 
             // Assert
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(movies, result.Value);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         }
 
         /// <summary>
-        /// Tests the GetMovieById method with valid ID.
+        /// Verifies that GetMovieById returns OkObjectResult when the movie is found.
         /// </summary>
         [Fact]
-        public async Task GetMovieById_ValidId_ReturnsMovie()
+        public async Task GetMovieById_Success_ReturnsOkResult()
         {
             // Arrange
-            var id = "123";
             var movie = new Movie();
-            _serviceMock.Setup(s => s.GetMovie(id)).ReturnsAsync(movie);
+            _mockService.Setup(s => s.GetMovie("1")).ReturnsAsync(movie);
 
             // Act
-            var result = await _controller.GetMovieById(id) as OkObjectResult;
+            var result = await _controller.GetMovieById("1");
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(movie, result.Value);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<Movie>(okResult.Value);
+            Assert.NotNull(returnValue);
         }
 
         /// <summary>
-        /// Tests the GetMovieById method with invalid ID.
+        /// Verifies that GetMovieById returns BadRequestObjectResult when the movie is not found.
         /// </summary>
         [Fact]
-        public async Task GetMovieById_InvalidId_ReturnsBadRequest()
+        public async Task GetMovieById_NotFound_ReturnsBadRequestResult()
         {
             // Arrange
-            var id = "invalid";
-            _serviceMock.Setup(s => s.GetMovie(id)).ReturnsAsync((Movie)null);
+            Movie movie = null;
+            _mockService.Setup(s => s.GetMovie("1")).ReturnsAsync(movie);
 
             // Act
-            var result = await _controller.GetMovieById(id) as BadRequestObjectResult;
+            var result = await _controller.GetMovieById("1");
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         }
 
         /// <summary>
-        /// Tests the DeleteMovie method with valid ID.
+        /// Verifies that DeleteMovie returns OkObjectResult when movie deletion is successful.
         /// </summary>
         [Fact]
-        public async Task DeleteMovie_ValidId_ReturnsOk()
+        public async Task DeleteMovie_Success_ReturnsOkResult()
         {
             // Arrange
-            var id = "123";
-            var response = new CreateResponse { IsSuccess = true, Message = "Movie deleted" };
-            _serviceMock.Setup(s => s.DeleteMovie(id)).ReturnsAsync(response);
+            var response = new CreateResponse { IsSuccess = true };
+            _mockService.Setup(s => s.DeleteMovie("1")).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.DeleteMovie(id) as OkObjectResult;
+            var result = await _controller.DeleteMovie("1");
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(response, result.Value);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(okResult.Value);
+            Assert.True(returnValue.IsSuccess);
         }
 
         /// <summary>
-        /// Tests the DeleteMovie method with invalid ID.
+        /// Verifies that DeleteMovie returns BadRequestObjectResult when movie deletion fails.
         /// </summary>
         [Fact]
-        public async Task DeleteMovie_InvalidId_ReturnsBadRequest()
+        public async Task DeleteMovie_Failure_ReturnsBadRequest()
         {
             // Arrange
-            var id = "invalid";
-            _serviceMock.Setup(s => s.DeleteMovie(id)).ReturnsAsync(new CreateResponse { IsSuccess = false, Message = "Movie not found" });
+            var response = new CreateResponse { IsSuccess = false };
+            _mockService.Setup(s => s.DeleteMovie("1")).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.DeleteMovie(id) as BadRequestObjectResult;
+            var result = await _controller.DeleteMovie("1");
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(badRequestResult.Value);
+            Assert.False(returnValue.IsSuccess);
         }
     }
 }

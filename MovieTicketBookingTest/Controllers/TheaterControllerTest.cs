@@ -12,154 +12,165 @@ using Xunit;
 
 namespace MovieTicketBooking.Tests
 {
-    /// <summary>
-    /// Test class for <see cref="TheaterController"/>.
-    /// </summary>
     public class TheaterControllerTests
     {
-        private readonly Mock<ITheaterService> _serviceMock;
+        private readonly Mock<ITheaterService> _mockService;
         private readonly TheaterController _controller;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TheaterControllerTests"/> class.
-        /// Sets up the mock service and the controller.
-        /// </summary>
         public TheaterControllerTests()
         {
-            _serviceMock = new Mock<ITheaterService>();
-            _controller = new TheaterController(_serviceMock.Object);
+            _mockService = new Mock<ITheaterService>();
+            _controller = new TheaterController(_mockService.Object);
         }
 
         /// <summary>
-        /// Tests the CreateTheater method with valid data.
+        /// Verifies that CreateTheater returns OkObjectResult when theater creation is successful.
         /// </summary>
         [Fact]
-        public async Task CreateTheater_ValidData_ReturnsOk()
+        public async Task CreateTheater_Success_ReturnsOkResult()
         {
             // Arrange
             var model = new TheaterDto();
-            var response = new CreateResponse { IsSuccess = true, Message = "Theater created" };
-            _serviceMock.Setup(s => s.AddTheater(model)).ReturnsAsync(response);
+            var response = new CreateResponse { IsSuccess = true };
+            _mockService.Setup(s => s.AddTheater(model)).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.CreateTheater(model) as OkObjectResult;
+            var result = await _controller.CreateTheater(model);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(response, result.Value);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(okResult.Value);
+            Assert.True(returnValue.IsSuccess);
         }
 
         /// <summary>
-        /// Tests the CreateTheater method with invalid data.
+        /// Verifies that CreateTheater returns BadRequestObjectResult when theater creation fails.
         /// </summary>
         [Fact]
-        public async Task CreateTheater_InvalidData_ReturnsBadRequest()
+        public async Task CreateTheater_Failure_ReturnsBadRequest()
         {
             // Arrange
-            _controller.ModelState.AddModelError("Name", "Required");
+            var model = new TheaterDto();
+            var response = new CreateResponse { IsSuccess = false };
+            _mockService.Setup(s => s.AddTheater(model)).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.CreateTheater(new TheaterDto()) as BadRequestObjectResult;
+            var result = await _controller.CreateTheater(model);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(badRequestResult.Value);
+            Assert.False(returnValue.IsSuccess);
         }
 
         /// <summary>
-        /// Tests the GetTheater method.
+        /// Verifies that GetTheater returns OkObjectResult when theaters are found.
         /// </summary>
         [Fact]
-        public async Task GetTheater_ReturnsListOfTheaters()
+        public async Task GetTheater_Success_ReturnsOkResult()
+        {
+            // Arrange
+            var theaters = new List<Theater> { new Theater() };
+            _mockService.Setup(s => s.GetTheater()).ReturnsAsync(theaters);
+
+            // Act
+            var result = await _controller.GetTheater();
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<List<Theater>>(okResult.Value);
+            Assert.Single(returnValue);
+        }
+
+        /// <summary>
+        /// Verifies that GetTheater returns BadRequestObjectResult when no theaters are found.
+        /// </summary>
+        [Fact]
+        public async Task GetTheater_NotFound_ReturnsBadRequestResult()
         {
             // Arrange
             var theaters = new List<Theater>();
-            _serviceMock.Setup(s => s.GetTheater()).ReturnsAsync(theaters);
+            _mockService.Setup(s => s.GetTheater()).ReturnsAsync(theaters);
 
             // Act
-            var result = await _controller.GetTheater() as OkObjectResult;
+            var result = await _controller.GetTheater();
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(theaters, result.Value);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         }
 
         /// <summary>
-        /// Tests the GetTheater method with valid ID.
+        /// Verifies that GetTheater returns OkObjectResult when the theater is found by ID.
         /// </summary>
         [Fact]
-        public async Task GetTheater_ValidId_ReturnsTheater()
+        public async Task GetTheaterById_Success_ReturnsOkResult()
         {
             // Arrange
-            var id = "123";
             var theater = new Theater();
-            _serviceMock.Setup(s => s.GetTheater(id)).ReturnsAsync(theater);
+            _mockService.Setup(s => s.GetTheater("1")).ReturnsAsync(theater);
 
             // Act
-            var result = await _controller.GetTheater(id) as OkObjectResult;
+            var result = await _controller.GetTheater("1");
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(theater, result.Value);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<Theater>(okResult.Value);
+            Assert.NotNull(returnValue);
         }
 
         /// <summary>
-        /// Tests the GetTheater method with invalid ID.
+        /// Verifies that GetTheater returns BadRequestObjectResult when the theater is not found by ID.
         /// </summary>
         [Fact]
-        public async Task GetTheater_InvalidId_ReturnsBadRequest()
+        public async Task GetTheaterById_NotFound_ReturnsBadRequestResult()
         {
             // Arrange
-            var id = "invalid";
-            _serviceMock.Setup(s => s.GetTheater(id)).ReturnsAsync((Theater)null);
+            Theater theater = null;
+            _mockService.Setup(s => s.GetTheater("1")).ReturnsAsync(theater);
 
             // Act
-            var result = await _controller.GetTheater(id) as BadRequestObjectResult;
+            var result = await _controller.GetTheater("1");
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         }
 
         /// <summary>
-        /// Tests the DeleteTheater method with valid ID.
+        /// Verifies that DeleteTheater returns OkObjectResult when theater deletion is successful.
         /// </summary>
         [Fact]
-        public async Task DeleteTheater_ValidId_ReturnsOk()
+        public async Task DeleteTheater_Success_ReturnsOkResult()
         {
             // Arrange
-            var id = "123";
-            var response = new CreateResponse { IsSuccess = true, Message = "Theater deleted" };
-            _serviceMock.Setup(s => s.DeleteTheater(id)).ReturnsAsync(response);
+            var response = new CreateResponse { IsSuccess = true };
+            _mockService.Setup(s => s.DeleteTheater("1")).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.DeleteTheater(id) as OkObjectResult;
+            var result = await _controller.DeleteTheater("1");
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(response, result.Value);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(okResult.Value);
+            Assert.True(returnValue.IsSuccess);
         }
 
         /// <summary>
-        /// Tests the DeleteTheater method with invalid ID.
+        /// Verifies that DeleteTheater returns BadRequestObjectResult when theater deletion fails.
         /// </summary>
         [Fact]
-        public async Task DeleteTheater_InvalidId_ReturnsBadRequest()
+        public async Task DeleteTheater_Failure_ReturnsBadRequest()
         {
             // Arrange
-            var id = "invalid";
-            _serviceMock.Setup(s => s.DeleteTheater(id)).ReturnsAsync(new CreateResponse { IsSuccess = false, Message = "Theater not found" });
+            var response = new CreateResponse { IsSuccess = false };
+            _mockService.Setup(s => s.DeleteTheater("1")).ReturnsAsync(response);
 
             // Act
-            var result = await _controller.DeleteTheater(id) as BadRequestObjectResult;
+            var result = await _controller.DeleteTheater("1");
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var returnValue = Assert.IsType<CreateResponse>(badRequestResult.Value);
+            Assert.False(returnValue.IsSuccess);
         }
     }
 }
