@@ -8,9 +8,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6C601CC2-6E66-4CFD-97CB-72FE298D4098}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		DockerFile = DockerFile
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieTicketBookingTest", "MovieTicketBookingTest\MovieTicketBookingTest.csproj", "{4049DEBB-D9F4-45A0-B827-394C892DAF20}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MovieTicketBookingTest", "MovieTicketBookingTest\MovieTicketBookingTest.csproj", "{4049DEBB-D9F4-45A0-B827-394C892DAF20}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
